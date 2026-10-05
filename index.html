@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Pollutant Standards Index</title>
+
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #F7F4FA;
+            margin: 0;
+            padding: 40px 20px;
+            color: #35444D;
+        }
+
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            text-align: center;
+        }
+
+
+        h1 {
+            color: #40364D;
+            margin-bottom: 5px;
+            font-size: 32px;
+        }
+
+
+        h2 {
+            color: #6D5A7D;
+            margin-top: 0;
+            font-size: 21px;
+            font-weight: normal;
+        }
+
+
+        .status {
+            margin: 15px 0 25px;
+            color: #6D5A7D;
+            font-size: 15px;
+        }
+
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            margin: auto;
+        }
+
+
+        th {
+            background-color: #9B82B5;
+            color: white;
+            padding: 11px;
+            border: 1px solid #80699A;
+            font-weight: normal;
+        }
+
+
+        td {
+            padding: 10px;
+            border: 1px solid #D8CFDF;
+            font-size: 14px;
+        }
+
+
+        td:first-child {
+            text-align: left;
+        }
+
+
+        tr:nth-child(even) {
+            background-color: #FBF9FD;
+        }
+
+
+        tr:hover {
+            background-color: #F0EAF5;
+        }
+
+
+        button {
+            margin-top: 22px;
+            padding: 9px 20px;
+            background-color: #80699A;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+
+        button:hover {
+            background-color: #6D587F;
+        }
+
+
+        #updated {
+            margin-top: 18px;
+            font-size: 13px;
+            color: #555;
+        }
+
+
+        .source {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #666;
+        }
+
+
+        .source a {
+            color: #6D5A7D;
+        }
+
+
+        @media (max-width: 700px) {
+
+            body {
+                padding: 25px 10px;
+            }
+
+            h1 {
+                font-size: 26px;
+            }
+
+            h2 {
+                font-size: 19px;
+            }
+
+            table {
+                min-width: 700px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <h1>
+        Pollutant Standards Index
+    </h1>
+
+
+    <h2>
+        Singapore
+    </h2>
+
+
+    <div class="status" id="status">
+        Status: Loading...
+    </div>
+
+
+    <div class="table-container">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>Metric</th>
+
+                    <th>Central</th>
+
+                    <th>West</th>
+
+                    <th>East</th>
+
+                    <th>North</th>
+
+                    <th>South</th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="dataTable">
+
+                <tr>
+
+                    <td colspan="6">
+                        Loading data...
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+    <button onclick="loadData()">
+        Refresh
+    </button>
+
+
+    <div id="updated">
+        Updated at: Loading...
+    </div>
+
+
+    <div class="source">
+
+        Data source:
+        <a href="https://data.gov.sg/" target="_blank">
+            data.gov.sg
+        </a>
+
+    </div>
+
+
+</div>
+
+
+<script>
+
+
+    /*
+     * Official real-time PSI API
+     */
+
+    const apiURL =
+        "https://api-open.data.gov.sg/v2/real-time/api/psi";
+
+
+    /*
+     * The 12 readings returned by the PSI API.
+     */
+
+    const readings = [
+
+        {
+            key: "o3_sub_index",
+            name: "o3_sub_index"
+        },
+
+        {
+            key: "pm10_twenty_four_hourly",
+            name: "pm10_twenty_four_hourly"
+        },
+
+        {
+            key: "pm10_sub_index",
+            name: "pm10_sub_index"
+        },
+
+        {
+            key: "co_sub_index",
+            name: "co_sub_index"
+        },
+
+        {
+            key: "pm25_twenty_four_hourly",
+            name: "pm25_twenty_four_hourly"
+        },
+
+        {
+            key: "so2_sub_index",
+            name: "so2_sub_index"
+        },
+
+        {
+            key: "co_eight_hour_max",
+            name: "co_eight_hour_max"
+        },
+
+        {
+            key: "no2_one_hour_max",
+            name: "no2_one_hour_max"
+        },
+
+        {
+            key: "so2_twenty_four_hourly",
+            name: "so2_twenty_four_hourly"
+        },
+
+        {
+            key: "pm25_sub_index",
+            name: "pm25_sub_index"
+        },
+
+        {
+            key: "psi_twenty_four_hourly",
+            name: "psi_twenty_four_hourly"
+        },
+
+        {
+            key: "o3_eight_hour_max",
+            name: "o3_eight_hour_max"
+        }
+
+    ];
+
+
+    /*
+     * Get data from the API.
+     */
+
+    async function loadData() {
+
+        const table =
+            document.getElementById("dataTable");
+
+        const status =
+            document.getElementById("status");
+
+        const updated =
+            document.getElementById("updated");
+
+
+        table.innerHTML = `
+            <tr>
+                <td colspan="6">
+                    Loading data...
+                </td>
+            </tr>
+        `;
+
+
+        try {
+
+            /*
+             * Send request to the PSI API.
+             */
+
+            const response =
+                await fetch(apiURL);
+
+
+            /*
+             * Convert the response into JSON.
+             */
+
+            const data =
+                await response.json();
+
+
+            /*
+             * Get the latest data item.
+             */
+
+            const item =
+                data.data.items[0];
+
+
+            /*
+             * Get the readings from the latest item.
+             */
+
+            const readingsData =
+                item.readings;
+
+
+            /*
+             * Clear the loading message.
+
+             */
+
+            table.innerHTML = "";
+
+
+            /*
+             * Add each of the 12 readings
+             * to the table.
+             */
+
+            readings.forEach(function(reading) {
+
+                const values =
+                    readingsData[reading.key];
+
+
+                const row =
+                    document.createElement("tr");
+
+
+                row.innerHTML = `
+
+                    <td>${reading.name}</td>
+
+                    <td>${values.central}</td>
+
+                    <td>${values.west}</td>
+
+                    <td>${values.east}</td>
+
+                    <td>${values.north}</td>
+
+                    <td>${values.south}</td>
+
+                `;
+
+
+                table.appendChild(row);
+
+            });
+
+
+            /*
+             * Display the time when
+             * the API was last updated.
+             */
+
+            const date =
+                new Date(item.updatedTimestamp);
+
+
+            updated.textContent =
+                "Updated at: " +
+                date.toLocaleString("en-SG");
+
+
+            /*
+             * Get PSI values for all regions.
+             */
+
+            const psi =
+                readingsData.psi_twenty_four_hourly;
+
+
+            const values = [
+
+                psi.central,
+                psi.west,
+                psi.east,
+                psi.north,
+                psi.south
+
+            ];
+
+
+            /*
+             * Find the highest PSI value.
+             */
+
+            const highest =
+                Math.max(...values);
+
+
+            /*
+             * Display a simple status.
+             */
+
+            if (highest <= 50) {
+
+                status.textContent =
+                    "Status: Good";
+
+            }
+
+            else if (highest <= 100) {
+
+                status.textContent =
+                    "Status: Healthy";
+
+            }
+
+            else if (highest <= 200) {
+
+                status.textContent =
+                    "Status: Unhealthy";
+
+            }
+
+            else {
+
+                status.textContent =
+                    "Status: Very Unhealthy";
+
+            }
+
+        }
+
+
+        catch (error) {
+
+            /*
+             * Display an error if the API
+             * cannot be reached.
+             */
+
+            table.innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        Unable to load data.
+                    </td>
+                </tr>
+            `;
+
+
+            status.textContent =
+                "Status: Unable to retrieve data.";
+
+
+            updated.textContent =
+                "Please try refreshing the page.";
+
+        }
+
+    }
+
+
+    /*
+     * Load the data automatically
+     * when the page opens.
+     */
+
+    loadData();
+
+
+</script>
+
+
+</body>
+
+</html>
